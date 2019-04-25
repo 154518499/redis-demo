@@ -6,14 +6,14 @@ import com.demo.testredis.utils.RedisService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @Auther: scp
@@ -29,6 +29,8 @@ public class UserController {
     private RedisService redisService;
     @Autowired
     private HttpServletRequest request;
+    @Autowired
+    private RedisTemplate redisTemplate;
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     /**
@@ -90,13 +92,28 @@ public class UserController {
         return "welcom!";
     }
 
-    @RequestMapping(value = "/saveMap",method = RequestMethod.GET)
-    public Map<String,Object> saveMap(){
+    @RequestMapping(value = "/saveMap/{id}",method = RequestMethod.GET)
+    public String saveMap(@PathVariable int id){
+        System.out.println(id+"  00");
         Map<String,Object>map=new HashMap<>();
         map.put("name","Tom");
         map.put("age","18");
-        redisService.hmset("user",map);
-        return (Map)redisService.hmget("user");
+        map.put("x",12424.6);
+        map.put("y",43434.1);
+        redisService.hmset("user-"+id,map,600);
+        return "用户-"+id+"存储成功";
     }
+
+    @RequestMapping(value = "/keys",method = RequestMethod.GET)
+    public List<Map<Object,Object>> keys(){
+        Set keys = redisTemplate.keys("user-" + "*");//模糊匹配
+        List<Map<Object,Object>>result=new ArrayList<>();
+        for (Object k:keys) {
+            Map<Object, Object> map = redisService.hmget(k.toString());
+            result.add(map);
+        }
+        return result;
+    }
+
 
 }
